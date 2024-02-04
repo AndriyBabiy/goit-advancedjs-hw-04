@@ -1,4 +1,4 @@
-.gallery {
+.grid-styling {
   padding: 5px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -6,15 +6,19 @@
   row-gap: 10px;
 }
 
+.iziToastStyling {
+  width: 60%;
+}
+
 @media (min-width: 768px) {
-  .gallery {
+  .grid-styling {
     padding: 10px;
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (min-width: 1024px) {
-  .gallery {
+  .grid-styling {
     padding: 15px;
     grid-template-columns: repeat(4, 1fr);
   }

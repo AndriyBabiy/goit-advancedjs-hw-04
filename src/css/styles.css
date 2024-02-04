@@ -9,6 +9,7 @@
 @import url('./header.css');
 @import url('./gallery.css');
 @import url('./photo-card.css');
+@import url('./load-more.css');
 
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
@@ -29,4 +30,8 @@
 body {
   margin: 0;
   padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
