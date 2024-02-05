@@ -6,6 +6,7 @@ const form = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreButton = document.querySelector('.load-more');
 let page = 1;
+let totalImages = 0;
 let totalPages = 0;
 let query = '';
 
@@ -21,6 +22,8 @@ async function handlerImageSearch(evt) {
   gallery.classList.remove('grid-styling');
 
   page = 1;
+  totalPages = 0;
+  totalImages = 0;
   query = evt.currentTarget.elements.searchQuery.value;
 
   try {
@@ -49,6 +52,7 @@ async function handlerLoadMore() {
 async function populateImages(query, page = 1) {
   const data = await fetchImages(query, page);
 
+  totalImages = data.totalHits;
   totalPages = Math.ceil(data.totalHits / 40);
 
   const images = data.hits;
@@ -58,17 +62,37 @@ async function populateImages(query, page = 1) {
       'Sorry, there are no images matching your search query. Please try again.'
     );
   } else {
-    iziToastSuccessPopup(`Hooray! We found ${data.totalHits} images.`);
+    if (page === 1) {
+      iziToastSuccessPopup(`Hooray! We found ${data.totalHits} images.`);
+    }
 
     gallery.classList.add('grid-styling');
 
     if (page < totalPages) {
+      loadMoreButton.disabled = false;
+      loadMoreButton.removeAttribute('style');
+      loadMoreButton.textContent = 'Load more';
       loadMoreButton.hidden = false;
     } else {
       loadMoreButton.hidden = true;
-      loadMoreButton.replaceWith(
-        "We're sorry, but you've reached the end of search results."
-      );
+      if (page !== 1) {
+        loadMoreButton.hidden = false;
+        loadMoreButton.disabled = true;
+        loadMoreButton.setAttribute(
+          'style',
+          `
+            background: none;
+            color: inherit;
+            border: none;
+            padding: 0;
+            font: inherit;
+            cursor: default;
+            outline: inherit;
+        `
+        );
+        loadMoreButton.textContent =
+          "We're sorry, but you've reached the end of search results.";
+      }
     }
 
     gallery.insertAdjacentHTML('beforeend', createImageBlockMarkup(images));
