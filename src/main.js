@@ -1,12 +1,13 @@
 import axios from 'axios';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
+import simpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const form = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreButton = document.querySelector('.load-more');
 let page = 1;
-let totalImages = 0;
 let totalPages = 0;
 let query = '';
 
@@ -14,6 +15,8 @@ loadMoreButton.hidden = true;
 
 form.addEventListener('submit', handlerImageSearch);
 loadMoreButton.addEventListener('click', handlerLoadMore);
+
+const lightbox = new simpleLightbox('.gallery a');
 
 async function handlerImageSearch(evt) {
   evt.preventDefault();
@@ -23,8 +26,14 @@ async function handlerImageSearch(evt) {
 
   page = 1;
   totalPages = 0;
-  totalImages = 0;
   query = evt.currentTarget.elements.searchQuery.value;
+
+  if (!query.trim().length) {
+    iziToastErrorPopup(
+      'Please insert something into the search bar to get images'
+    );
+    throw new Error('Error: No search query');
+  }
 
   try {
     populateImages(query);
@@ -52,7 +61,6 @@ async function handlerLoadMore() {
 async function populateImages(query, page = 1) {
   const data = await fetchImages(query, page);
 
-  totalImages = data.totalHits;
   totalPages = Math.ceil(data.totalHits / 40);
 
   const images = data.hits;
@@ -68,34 +76,17 @@ async function populateImages(query, page = 1) {
 
     gallery.classList.add('grid-styling');
 
-    if (page < totalPages) {
+    if (page != totalPages) {
       loadMoreButton.disabled = false;
       loadMoreButton.removeAttribute('style');
       loadMoreButton.textContent = 'Load more';
       loadMoreButton.hidden = false;
     } else {
-      loadMoreButton.hidden = true;
-      if (page !== 1) {
-        loadMoreButton.hidden = false;
-        loadMoreButton.disabled = true;
-        loadMoreButton.setAttribute(
-          'style',
-          `
-            background: none;
-            color: inherit;
-            border: none;
-            padding: 0;
-            font: inherit;
-            cursor: default;
-            outline: inherit;
-        `
-        );
-        loadMoreButton.textContent =
-          "We're sorry, but you've reached the end of search results.";
-      }
+      showEndOfSearchResults();
     }
 
     gallery.insertAdjacentHTML('beforeend', createImageBlockMarkup(images));
+    lightbox.refresh();
   }
 }
 
@@ -113,40 +104,50 @@ async function fetchImages(query, page) {
     safesearch: 'true',
   });
 
-  const response = await fetch(`${CORE_URL}?${params}`);
+  const response = await axios.get(`${CORE_URL}?${params}`);
 
-  if (!response.ok) {
+  if (!response.statusText === 'OK') {
     throw new Error(response.statusText);
   }
 
-  return await response.json();
+  return await response.data;
 }
 
 function createImageBlockMarkup(arr) {
   return arr
     .map(
-      ({ webformatURL, tags, likes, views, comments, downloads }) => `
-      <div class="photo-card">
-        <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-        <div class="info">
-            <p class="info-item">
-              <b>Likes</b>
-              ${likes}
+      ({
+        largeImageURL,
+        webformatURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) => `
+      <a href="${largeImageURL}">
+        <div class="photo-card">
+          <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+          <div class="info">
+              <p class="info-item">
+                <b>Likes</b>
+                ${likes}
+              </p>
+              <p class="info-item">
+              <b>Views</b>
+              ${views}
             </p>
-            <p class="info-item">
-            <b>Views</b>
-            ${views}
-          </p>
-            <p class="info-item">
-              <b>Comments</b>
-              ${comments}
-            </p>
-            <p class="info-item">
-              <b>Downloads</b>
-              ${downloads}
-            </p>
+              <p class="info-item">
+                <b>Comments</b>
+                ${comments}
+              </p>
+              <p class="info-item">
+                <b>Downloads</b>
+                ${downloads}
+              </p>
+          </div>
         </div>
-      </div>
+      </a>
     `
     )
     .join('');
@@ -173,4 +174,23 @@ function iziToastErrorPopup(text) {
     target: '.iziToastLocation',
     timeout: false,
   });
+}
+
+function showEndOfSearchResults() {
+  loadMoreButton.hidden = false;
+  loadMoreButton.disabled = true;
+  loadMoreButton.setAttribute(
+    'style',
+    `
+      background: none;
+      color: inherit;
+      border: none;
+      padding: 0;
+      font: inherit;
+      cursor: default;
+      outline: inherit;
+  `
+  );
+  loadMoreButton.textContent =
+    "We're sorry, but you've reached the end of search results.";
 }
